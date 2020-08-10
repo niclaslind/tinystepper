@@ -8,11 +8,11 @@ import (
 
 type StepperConfig struct {
 	direction     int
-	stepDelay     int
-	lastStepTime  int
-	numberOfSteps int
+	stepDelay     int64
+	lastStepTime  int64
+	numberOfSteps int64
 	pinCount      int
-	stepNumber    int
+	stepNumber    int64
 }
 
 type Stepper struct {
@@ -20,7 +20,7 @@ type Stepper struct {
 	config    StepperConfig
 }
 
-func NewStepper(numberOfSteps int, motorPins ...machine.Pin) *Stepper {
+func NewStepper(numberOfSteps int64, motorPins ...machine.Pin) *Stepper {
 	s := new(Stepper)
 	s.config.stepNumber = 0
 	s.config.direction = 0
@@ -37,7 +37,7 @@ func NewStepper(numberOfSteps int, motorPins ...machine.Pin) *Stepper {
 /*
 	Sets the speed in revs per minute
 */
-func (s *Stepper) SetSpeed(speed int) {
+func (s *Stepper) SetSpeed(speed int64) {
 	s.config.stepDelay = 60 * 1000 * 1000 / s.config.numberOfSteps / speed
 }
 
@@ -55,11 +55,11 @@ func (s *Stepper) Step(stepsToMove float64) {
 	}
 
 	for stepsLeft > 0 {
-		now := time.Now().Nanosecond() * 1000
+		now := time.Now()
 
-		if now-s.config.lastStepTime >= s.config.stepDelay {
+		if time.Since(now).Microseconds()-s.config.lastStepTime >= s.config.stepDelay {
 			// get the timeStamp of when you stepped
-			s.config.lastStepTime = now
+			s.config.lastStepTime = time.Since(now).Microseconds()
 
 			// depending on direction, increment or decrement the step number
 			if s.config.direction == 1 {
@@ -88,7 +88,7 @@ func (s *Stepper) Step(stepsToMove float64) {
 }
 
 func (s *Stepper) stepMotor() {
-	var step int
+	var step int64
 	if len(s.motorPins) == 5 {
 		step = s.config.stepNumber % 10
 	} else {
